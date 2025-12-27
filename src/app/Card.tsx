@@ -4,7 +4,7 @@ import { useRef, useMemo } from 'react'
 
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stats, StatsGl } from '@react-three/drei'
-import { Camera, MathUtils } from 'three'
+import { Camera, MathUtils, MeshStandardMaterial } from 'three'
 import { Bloom, Noise, EffectComposer } from '@react-three/postprocessing'
 
 import vertexShader from '@/app/shaders/vert.glsl'
@@ -99,12 +99,7 @@ const Sphere = () => {
     return (
         <mesh ref={mesh} position={[0, 1.5, 0]} scale={1.5}>
             <sphereGeometry args={[1, 32, 32]} />
-            {/* <meshPhongMaterial color="orange" /> */}
-            <meshPhysicalMaterial
-                color="orange"
-                metalness={0.1}
-                roughness={0.4}
-            />
+            <meshStandardMaterial color="orange" />
         </mesh>
     )
 }
@@ -119,7 +114,7 @@ const Plane = () => {
             scale={9999}
         >
             <planeGeometry args={[1, 1, 32, 32]} />
-            <meshPhongMaterial color="grey" />
+            <meshStandardMaterial color="lightblue" />
         </mesh>
     )
 }
@@ -128,23 +123,27 @@ const Scene = () => {
     return (
         <Canvas camera={{ position: [3, 3, 3], fov: 90 }}>
             <ambientLight intensity={0} />
-            <pointLight position={[3, 4, 3]} intensity={15} />
+            <pointLight
+                position={[0, 15, 0]}
+                intensity={1}
+                color={[230, 245, 240]}
+            />
 
             <OrbitControls />
-            <Stats />
 
             <Sphere />
             <Plane />
 
-            <axesHelper args={[5]} />
+            {/* <axesHelper args={[5]} /> */}
             <EffectComposer>
-                <Noise opacity={0.1} />
                 <Bloom
                     luminanceThreshold={0}
-                    luminanceSmoothing={0.9}
+                    luminanceSmoothing={0.3}
                     height={300}
-                    intensity={1.5}
+                    intensity={5}
                 />
+
+                <Noise opacity={0.02} />
             </EffectComposer>
         </Canvas>
     )
