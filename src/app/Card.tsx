@@ -2,80 +2,37 @@
 
 import { OrbitControls, OrthographicCamera } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { wrapEffect, EffectComposer } from '@react-three/postprocessing'
-import { useControls } from 'leva'
-import { Effect } from 'postprocessing'
+import { EffectComposer } from '@react-three/postprocessing'
 import { useRef } from 'react'
-import * as THREE from 'three'
 
-// Testing the retro shader from Maxime Heckel
-import vertexShader from '@/app/shaders/vert.glsl'
-import fragmentShader from '@/app/shaders/frag.glsl'
+import { RetroEffect } from './Effects/Retro'
+import { SobelEffect } from './Effects/Sobel'
+import { useControls } from 'leva'
 
-// Custom Sobel Shader
-import testfrag from '@/app/shaders/testfrag.glsl'
-
-class SobelEffectImpl extends Effect {
-    constructor() {
-        super('SobelEffect', testfrag, {
-            uniforms: new Map(),
-        })
-    }
-}
-
-const SobelEffect = wrapEffect(SobelEffectImpl)
-
-const Sobel = () => {
+const TorusKnot = () => {
     const mesh = useRef(null)
-
     return (
-        <>
-            <mesh receiveShadow castShadow>
-                <torusKnotGeometry args={[1, 0.25, 128, 100]} />
-                <meshStandardMaterial color="cyan" />
-            </mesh>
-            <EffectComposer>
-                <SobelEffect />
-            </EffectComposer>
-        </>
+        <mesh receiveShadow castShadow>
+            <torusKnotGeometry args={[1, 0.25, 128, 100]} />
+            <meshStandardMaterial color="cyan" />
+        </mesh>
     )
 }
-class RetroEffectImpl extends Effect {
-    constructor({ matrixSize = 8.0, bias = 0.5 }) {
-        const uniforms = new Map([
-            ['matrixSize', new THREE.Uniform(8.0)],
-            ['bias', new THREE.Uniform(0.5)],
-        ])
 
-        super('RetroEffect', fragmentShader, {
-            uniforms,
-        })
-
-        this.uniforms = uniforms
-    }
-
-    set matrixSize(value) {
-        this.uniforms.get('matrixSize').value = value
-    }
-
-    get matrixSize() {
-        return this.uniforms.get('matrixSize').value
-    }
-
-    set bias(value) {
-        this.uniforms.get('bias').value = value
-    }
-
-    get bias() {
-        return this.uniforms.get('bias').value
-    }
+const Sphere = () => {
+    const mesh = useRef(null)
+    return (
+        <mesh receiveShadow castShadow position={[2, 0, 0]}>
+            <sphereGeometry args={[1, 32, 32]} />
+            <meshStandardMaterial color="orange" />
+        </mesh>
+    )
 }
 
-const RetroEffect = wrapEffect(RetroEffectImpl)
+const Scene = () => {
+    // Leva controls for uniforms
 
-const Retro = () => {
-    const mesh = useRef(null)
-
+    // RetroEffect params
     const { matrixSize, bias } = useControls({
         matrixSize: {
             value: '8.0',
@@ -88,28 +45,28 @@ const Retro = () => {
         },
     })
 
-    return (
-        <>
-            <mesh receiveShadow castShadow>
-                <torusKnotGeometry args={[1, 0.25, 128, 100]} />
-                <meshStandardMaterial color="cyan" />
-            </mesh>
-            <EffectComposer>
-                <RetroEffect matrixSize={parseFloat(matrixSize)} bias={bias} />
-            </EffectComposer>
-        </>
-    )
-}
+    const { threshold } = useControls({
+        threshold: {
+            value: 0.1,
+            min: 0.0,
+            max: 1.0,
+            step: 0.01,
+        },
+    })
 
-const Scene = () => {
     return (
         <Canvas shadows dpr={[1, 2]}>
-            <directionalLight position={[0, 10, 5]} intensity={10.5} />
-            <color attach="background" args={['black']} />
+            {/* Lighting */}
+            {/* <directionalLight position={[0, 10, 5]} intensity={10.5} /> */}
+            <ambientLight intensity={0.5} />
+            <pointLight position={[1, 3, 1]} intensity={10} />
 
-            {/* <Retro /> */}
-            <Sobel />
+            {/* Scene Objects */}
+            <Sphere />
+            <TorusKnot />
 
+            {/* Helpers and camera */}
+            <axesHelper args={[5]} />
             <OrbitControls />
             <OrthographicCamera
                 makeDefault
@@ -118,6 +75,12 @@ const Scene = () => {
                 near={0.01}
                 far={500}
             />
+
+            {/* Pass effects here */}
+            <EffectComposer>
+                <SobelEffect threshold={threshold} />
+                {/* <RetroEffect matrixSize={parseFloat(matrixSize)} bias={bias} /> */}
+            </EffectComposer>
         </Canvas>
     )
 }
