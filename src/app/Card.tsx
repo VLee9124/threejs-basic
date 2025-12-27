@@ -1,150 +1,123 @@
 'use client'
 
-import { useRef, useMemo } from 'react'
+import { OrbitControls, OrthographicCamera } from '@react-three/drei'
+import { Canvas } from '@react-three/fiber'
+import { wrapEffect, EffectComposer } from '@react-three/postprocessing'
+import { useControls } from 'leva'
+import { Effect } from 'postprocessing'
+import { useRef } from 'react'
+import * as THREE from 'three'
 
-import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, Stats, StatsGl } from '@react-three/drei'
-import { Camera, MathUtils, MeshStandardMaterial } from 'three'
-import { Bloom, Noise, EffectComposer } from '@react-three/postprocessing'
-
+// Testing the retro shader from Maxime Heckel
 import vertexShader from '@/app/shaders/vert.glsl'
 import fragmentShader from '@/app/shaders/frag.glsl'
 
-const MovingPlane = () => {
-    // This reference will give us direct access to the mesh
+// Custom Sobel Shader
+import testfrag from '@/app/shaders/testfrag.glsl'
+
+class SobelEffectImpl extends Effect {
+    constructor() {
+        super('SobelEffect', testfrag, {
+            uniforms: new Map(),
+        })
+    }
+}
+
+const SobelEffect = wrapEffect(SobelEffectImpl)
+
+const Sobel = () => {
     const mesh = useRef(null)
 
-    const uniforms = useMemo(
-        () => ({
-            u_time: {
-                value: 0.0,
-            },
-        }),
-        []
+    return (
+        <>
+            <mesh receiveShadow castShadow>
+                <torusKnotGeometry args={[1, 0.25, 128, 100]} />
+                <meshStandardMaterial color="cyan" />
+            </mesh>
+            <EffectComposer>
+                <SobelEffect />
+            </EffectComposer>
+        </>
     )
+}
+class RetroEffectImpl extends Effect {
+    constructor({ matrixSize = 8.0, bias = 0.5 }) {
+        const uniforms = new Map([
+            ['matrixSize', new THREE.Uniform(8.0)],
+            ['bias', new THREE.Uniform(0.5)],
+        ])
 
-    useFrame((state) => {
-        const { clock } = state
-        mesh.current.material!.uniforms.u_time.value = clock.getElapsedTime()
+        super('RetroEffect', fragmentShader, {
+            uniforms,
+        })
+
+        this.uniforms = uniforms
+    }
+
+    set matrixSize(value) {
+        this.uniforms.get('matrixSize').value = value
+    }
+
+    get matrixSize() {
+        return this.uniforms.get('matrixSize').value
+    }
+
+    set bias(value) {
+        this.uniforms.get('bias').value = value
+    }
+
+    get bias() {
+        return this.uniforms.get('bias').value
+    }
+}
+
+const RetroEffect = wrapEffect(RetroEffectImpl)
+
+const Retro = () => {
+    const mesh = useRef(null)
+
+    const { matrixSize, bias } = useControls({
+        matrixSize: {
+            value: '8.0',
+            options: ['2.0', '4.0', '8.0'],
+        },
+        bias: {
+            value: 0.7,
+            min: 0.0,
+            max: 1.0,
+        },
     })
 
     return (
-        <mesh
-            ref={mesh}
-            position={[0, 0, 0]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            scale={1.5}
-        >
-            <planeGeometry args={[1, 1, 32, 32]} />
-            <shaderMaterial
-                fragmentShader={fragmentShader}
-                vertexShader={vertexShader}
-                uniforms={uniforms}
-                // wireframe
-            />
-        </mesh>
-    )
-}
-
-const Blob = () => {
-    // This reference will give us direct access to the mesh
-    const mesh = useRef(null)
-    const hover = useRef(false)
-
-    const uniforms = useMemo(
-        () => ({
-            u_intensity: {
-                value: 0.3,
-            },
-            u_time: {
-                value: 0.0,
-            },
-        }),
-        []
-    )
-
-    useFrame((state) => {
-        const { clock } = state
-        mesh.current.material.uniforms.u_time.value =
-            0.4 * clock.getElapsedTime()
-
-        mesh.current.material.uniforms.u_intensity.value = MathUtils.lerp(
-            mesh.current.material.uniforms.u_intensity.value,
-            hover.current ? 0.85 : 0.15,
-            0.02
-        )
-    })
-
-    return (
-        <mesh
-            ref={mesh}
-            position={[0, 0, 0]}
-            scale={1.5}
-            onPointerOver={() => (hover.current = true)}
-            onPointerOut={() => (hover.current = false)}
-        >
-            <icosahedronGeometry args={[2, 20]} />
-            <shaderMaterial
-                fragmentShader={fragmentShader}
-                vertexShader={vertexShader}
-                uniforms={uniforms}
-                wireframe={false}
-            />
-        </mesh>
-    )
-}
-
-const Sphere = () => {
-    const mesh = useRef(null)
-    return (
-        <mesh ref={mesh} position={[0, 1.5, 0]} scale={1.5}>
-            <sphereGeometry args={[1, 32, 32]} />
-            <meshStandardMaterial color="orange" />
-        </mesh>
-    )
-}
-
-const Plane = () => {
-    const mesh = useRef(null)
-    return (
-        <mesh
-            ref={mesh}
-            position={[0, 0, 0]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            scale={9999}
-        >
-            <planeGeometry args={[1, 1, 32, 32]} />
-            <meshStandardMaterial color="lightblue" />
-        </mesh>
+        <>
+            <mesh receiveShadow castShadow>
+                <torusKnotGeometry args={[1, 0.25, 128, 100]} />
+                <meshStandardMaterial color="cyan" />
+            </mesh>
+            <EffectComposer>
+                <RetroEffect matrixSize={parseFloat(matrixSize)} bias={bias} />
+            </EffectComposer>
+        </>
     )
 }
 
 const Scene = () => {
     return (
-        <Canvas camera={{ position: [3, 3, 3], fov: 90 }}>
-            <ambientLight intensity={0} />
-            <pointLight
-                position={[0, 15, 0]}
-                intensity={1}
-                color={[230, 245, 240]}
-            />
+        <Canvas shadows dpr={[1, 2]}>
+            <directionalLight position={[0, 10, 5]} intensity={10.5} />
+            <color attach="background" args={['black']} />
+
+            {/* <Retro /> */}
+            <Sobel />
 
             <OrbitControls />
-
-            <Sphere />
-            <Plane />
-
-            {/* <axesHelper args={[5]} /> */}
-            <EffectComposer>
-                <Bloom
-                    luminanceThreshold={0}
-                    luminanceSmoothing={0.3}
-                    height={300}
-                    intensity={5}
-                />
-
-                <Noise opacity={0.02} />
-            </EffectComposer>
+            <OrthographicCamera
+                makeDefault
+                position={[5, 5, 5]}
+                zoom={120}
+                near={0.01}
+                far={500}
+            />
         </Canvas>
     )
 }
