@@ -4,10 +4,11 @@ import { OrbitControls, OrthographicCamera } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { EffectComposer } from '@react-three/postprocessing'
 import { useRef } from 'react'
+import { useControls } from 'leva'
 
 import { RetroEffect } from './Effects/Retro'
 import { SobelEffect } from './Effects/Sobel'
-import { useControls } from 'leva'
+import { PixelEffect } from './Effects/Pixel'
 
 const TorusKnot = () => {
     const mesh = useRef(null)
@@ -58,7 +59,7 @@ const Scene = () => {
         <Canvas shadows dpr={[1, 2]}>
             {/* Lighting */}
             {/* <directionalLight position={[0, 10, 5]} intensity={10.5} /> */}
-            <ambientLight intensity={0.5} />
+            <ambientLight intensity={0.1} />
             <pointLight position={[1, 3, 1]} intensity={10} />
 
             {/* Scene Objects */}
@@ -78,8 +79,9 @@ const Scene = () => {
 
             {/* Pass effects here */}
             <EffectComposer>
-                <SobelEffect threshold={threshold} />
+                {/* <SobelEffect threshold={threshold} /> */}
                 {/* <RetroEffect matrixSize={parseFloat(matrixSize)} bias={bias} /> */}
+                <PixelEffect Pixels={128.0} />
             </EffectComposer>
         </Canvas>
     )

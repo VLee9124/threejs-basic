@@ -1,3 +1,6 @@
+// Sobel Edge Detection Fragment Shader
+// Check https://github.com/pmndrs/postprocessing/wiki/Custom-Effects for more inf on included uniforms
+
 precision highp float;
 
 uniform float threshold;
