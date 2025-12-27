@@ -3,23 +3,11 @@
 import { useRef } from 'react'
 
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Stats, StatsGl } from '@react-three/drei'
 import { Camera } from 'three'
 
-const fragmentShader = `
-void main() {
-  gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-}
-`
-const vertexShader = `
-void main() {
-  vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-  vec4 viewPosition = viewMatrix * modelPosition;
-  vec4 projectedPosition = projectionMatrix * viewPosition;
-
-  gl_Position = projectedPosition;
-}
-`
+import vertexShader from '@/app/shaders/vert.glsl'
+import fragmentShader from '@/app/shaders/frag.glsl'
 
 const Flag = () => {
     // This reference will give us direct access to the mesh
@@ -58,12 +46,13 @@ const Cube = () => {
 
 export default function Card() {
     return (
-        <div className="w-full min-h-full overflow-hidden">
-            <Canvas>
+        <div className="w-full min-h-full overflow-hidden relative">
+            <Canvas camera={{ position: [1, 1, 1], fov: 90 }}>
                 <OrbitControls />
-                {/* <Cube /> */}
+                <Stats />
+                <Cube />
                 <Flag />
-                <axesHelper args={[3]} />
+                <axesHelper args={[1]} />
             </Canvas>
         </div>
     )
